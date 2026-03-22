@@ -1,0 +1,41 @@
+# --- Python / Backend (api & data_pump) ---
+# Virtual Environments
+venv/
+venv64/
+venv32/
+ENV/
+env/
+.env
+.venv
+
+# Python bytecode
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Database
+*.sqlite3
+# หากต้องการเก็บ schema ไว้แต่ไม่เอาข้อมูล ให้ปลดคอมเมนต์บรรทัดล่าง (ถ้ามีไฟล์ .db อื่นๆ)
+# *.db
+
+# --- Frontend (Node/Vite) ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
