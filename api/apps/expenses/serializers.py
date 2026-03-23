@@ -1,6 +1,12 @@
 from rest_framework import serializers
 from .models import ExpenseTransaction
 
+class ExpenseTransactionSerializer(serializers.ModelSerializer):
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("จำนวนเงินต้องมากกว่า 0")
+        return value
+
 class ExpenseSerializer(serializers.ModelSerializer):
     # แสดงผลชื่อแหล่งข้อมูลแบบอ่านง่าย (Factory Expense / Office Expense)
     source_display = serializers.CharField(source='get_source_type_display', read_only=True)

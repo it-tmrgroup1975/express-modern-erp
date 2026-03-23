@@ -17,9 +17,9 @@ const ExpenseImport = () => {
   const downloadTemplate = () => {
     // กำหนดหัวตารางตามโครงสร้าง Model ล่าสุด
     const headers = [
-      "ส่วนงาน", "รหัสแผนก", "รหัสบัญชี", "รายการค่าใช้จ่าย", 
-      "เดือน/ปี", "ว.ด.ป", "เลขที่เอกสาร", "SUP", 
-      "จำนวน", "หน่วยนับ", "VAT", "จำนวนเงิน", 
+      "ส่วนงาน", "รหัสแผนก", "รหัสบัญชี", "รายการค่าใช้จ่าย",
+      "เดือน/ปี", "ว.ด.ป", "เลขที่เอกสาร", "SUP",
+      "จำนวน", "หน่วยนับ", "VAT", "จำนวนเงิน",
       "หมายเหตุ", "รายละเอียด"
     ];
 
@@ -46,7 +46,7 @@ const ExpenseImport = () => {
     const worksheet = XLSX.utils.json_to_sheet(sampleData, { header: headers });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
-    
+
     // บันทึกไฟล์
     XLSX.writeFile(workbook, `Expense_Template_${sourceType}.xlsx`);
   };
@@ -93,6 +93,20 @@ const ExpenseImport = () => {
     }
   };
 
+  const validateData = (data: any[]) => {
+    return data.every(row =>
+      row.amount > 0 &&
+      row.account_code &&
+      new Date(row.expense_date) <= new Date()
+    );
+  };
+
+  // ในฟังก์ชัน Handle Upload
+  if (!validateData(parsedData)) {
+    alert("ข้อมูลไม่ถูกต้อง: ยอดเงินต้องเป็นบวก และวันที่ไม่เกินปัจจุบัน");
+    return;
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -101,8 +115,8 @@ const ExpenseImport = () => {
           <p className="text-slate-500">อัปโหลดไฟล์ Excel เพื่อนำเข้าข้อมูลค่าใช้จ่ายเข้าสู่ระบบ</p>
         </div>
         {/* ปุ่มดาวน์โหลด Template */}
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={downloadTemplate}
           className="flex items-center gap-2 border-blue-200 text-blue-600 hover:bg-blue-50"
         >
@@ -114,7 +128,7 @@ const ExpenseImport = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Step 1: Select Type */}
         <Card className={`cursor-pointer transition-all border-2 ${sourceType === 'FACTORY' ? 'border-blue-500 bg-blue-50/30' : 'border-slate-200'}`}
-              onClick={() => setSourceType('FACTORY')}>
+          onClick={() => setSourceType('FACTORY')}>
           <CardContent className="pt-6 flex flex-col items-center text-center gap-3">
             <div className={`p-3 rounded-xl ${sourceType === 'FACTORY' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
               <Factory size={24} />
@@ -127,7 +141,7 @@ const ExpenseImport = () => {
         </Card>
 
         <Card className={`cursor-pointer transition-all border-2 ${sourceType === 'OFFICE' ? 'border-blue-500 bg-blue-50/30' : 'border-slate-200'}`}
-              onClick={() => setSourceType('OFFICE')}>
+          onClick={() => setSourceType('OFFICE')}>
           <CardContent className="pt-6 flex flex-col items-center text-center gap-3">
             <div className={`p-3 rounded-xl ${sourceType === 'OFFICE' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
               <Building2 size={24} />
@@ -169,7 +183,7 @@ const ExpenseImport = () => {
             onChange={handleFileChange}
             disabled={uploading}
           />
-          
+
           <div className="mb-4 p-4 bg-slate-50 rounded-full text-slate-400">
             <FileSpreadsheet size={48} />
           </div>
@@ -203,9 +217,8 @@ const ExpenseImport = () => {
 
       {/* Status Notifications */}
       {status.type && (
-        <div className={`p-4 rounded-xl flex items-start gap-3 border shadow-sm ${
-          status.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
+        <div className={`p-4 rounded-xl flex items-start gap-3 border shadow-sm ${status.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
           {status.type === 'success' ? <CheckCircle2 className="mt-0.5" size={20} /> : <AlertCircle className="mt-0.5" size={20} />}
           <div className="text-sm">
             <p className="font-bold">{status.type === 'success' ? 'สำเร็จ!' : 'เกิดข้อผิดพลาด'}</p>

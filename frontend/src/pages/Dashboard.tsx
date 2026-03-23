@@ -1,11 +1,11 @@
-// frontend/src/pages/Dashboard.tsx
 import React, { useMemo } from 'react';
 import { useQuery } from "@tanstack/react-query";
-import axios from 'axios';
 import { differenceInDays, parseISO } from 'date-fns';
 import { TrendingUp, AlertCircle, Clock, CheckCircle, ArrowUpRight, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+// นำเข้า api instance ที่เราตั้งค่า Interceptor ไว้แล้ว
+import api from '../lib/api'; 
 import AgingChart from '../components/AgingChart';
 import { SkeletonCard } from '../components/DataTableControls';
 
@@ -15,12 +15,13 @@ const Dashboard = () => {
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["transactions-summary"],
     queryFn: async () => {
-      const response = await axios.get("http://localhost:8000/api/analytics/transactions/");
+      // เปลี่ยนจาก axios.get เป็น api.get เพื่อให้แนบ JWT Token อัตโนมัติ
+      const response = await api.get("/api/analytics/transactions/");
       return response.data;
     },
   });
 
-  // ลอจิกการคำนวณ Aging สำหรับสรุปผล
+  // ลอจิกการคำนวณ Aging สำหรับสรุปผล (คงเดิม)
   const summary = useMemo(() => {
     const today = new Date();
     const stats = {
@@ -47,7 +48,6 @@ const Dashboard = () => {
     return stats;
   }, [transactions]);
 
-  // ✅ แก้ไข: เปลี่ยนจากส่ง counts เป็นส่งยอดเงิน (value) เพื่อให้ PieChart แสดงสัดส่วนหนี้ที่ถูกต้อง
   const chartData = {
     current: summary.normal,
     overdue_30_60: summary.overdue30,

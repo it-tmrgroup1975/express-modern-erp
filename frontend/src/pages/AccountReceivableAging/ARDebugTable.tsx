@@ -1,12 +1,14 @@
-// frontend/src/pages/ARDebugTable.tsx
+// frontend/src/pages/AccountReceivableAging/ARDebugTable.tsx
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
 import { format, parseISO, differenceInDays, getYear, addYears } from "date-fns";
 import {
-  ChevronRight,  User, ArrowLeft,
+  ChevronRight, User, ArrowLeft,
   LayoutGrid, List, Search, FilterX
 } from "lucide-react";
+
+// ✅ เปลี่ยนมาใช้ api instance ที่ทำ Interceptor ไว้
+import api from "../../lib/api";
 
 import { Card, CardContent, CardHeader } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -34,14 +36,16 @@ const ARDebugTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
-  // ✅ ย้าย innerPage มาไว้ที่นี่ (Top Level) เพื่อแก้ปัญหา Error
   const [innerPage, setInnerPage] = useState(1);
   const innerItemsPerPage = 8;
 
+  // ✅ ปรับ queryFn ให้ใช้ api.get เพื่อส่ง JWT Token
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ["transactions"],
     queryFn: async () => {
-      const res = await axios.get("http://localhost:8000/api/analytics/transactions/");
+      // เรียกผ่าน api instance ระบบจะเติม Authorization: Bearer <token> ให้เอง
+      const res = await api.get("/api/analytics/transactions/");
+
       return res.data || [];
     },
   });
@@ -99,32 +103,10 @@ const ARDebugTable = () => {
     return Object.values(customers).sort((a: any, b: any) => b.total - a.total);
   }, [selectedRange, agingGroups]);
 
-  // Drill-down data calculation
-  const customerTransactions = useMemo(() => {
-    if (!selectedCustomer) return [];
-    return filteredData
-      .filter((t: any) => t.cusnam === selectedCustomer)
-      .map((t: any) => ({
-        doc_num: t.docnum,
-        cus_code: t.cusnam,
-        rem_amt: Number(t.remamt) || 0,
-        net_amt: Number(t.netamt) || 0,
-        doc_date: formatThaiDate(t.docdat),
-        age_days: differenceInDays(new Date(), parseISO(t.docdat))
-      }));
-  }, [filteredData, selectedCustomer]);
-
-  const totalInnerPages = Math.ceil(customerTransactions.length / innerItemsPerPage);
-  const currentInnerItems = customerTransactions.slice(
-    (innerPage - 1) * innerItemsPerPage,
-    innerPage * innerItemsPerPage
-  );
-
   // --- Skeleton Loading State ---
   if (isLoading) {
     return (
       <div className="w-full p-4 lg:p-10 space-y-6 animate-pulse bg-slate-50/30 min-h-screen">
-        {/* Header Skeleton */}
         <div className="flex flex-col xl:flex-row justify-between gap-8 pb-10 border-b border-slate-200">
           <div className="space-y-4">
             <div className="h-10 w-64 bg-slate-200 rounded-xl" />
@@ -137,28 +119,9 @@ const ARDebugTable = () => {
             <div className="h-12 w-24 bg-slate-200 rounded-2xl" />
           </div>
         </div>
-
-        {/* Table Skeleton */}
         <div className="space-y-6">
           <div className="rounded-[2rem] overflow-hidden border border-slate-200 bg-white shadow-2xl">
-            <div className="w-full overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-slate-900 h-20">
-                  <tr><th colSpan={5} className="p-8"><div className="h-4 w-full bg-slate-700/50 rounded-full" /></th></tr>
-                </thead>
-                <tbody>
-                  {[1, 2, 3, 4, 5, 6].map(i => (
-                    <tr key={i} className="border-b border-slate-50">
-                      <td className="p-8"><div className="h-5 w-32 bg-slate-100 rounded-lg" /></td>
-                      <td className="p-8"><div className="h-5 w-48 bg-slate-100 rounded-lg" /></td>
-                      <td className="p-8"><div className="h-5 w-24 bg-slate-100 rounded-lg" /></td>
-                      <td className="p-8"><div className="h-5 w-24 bg-slate-100 rounded-lg ml-auto" /></td>
-                      <td className="p-8"><div className="h-7 w-32 bg-rose-50 rounded-lg ml-auto" /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <div className="w-full overflow-x-auto h-96 bg-slate-100/50" />
           </div>
         </div>
       </div>
@@ -210,77 +173,59 @@ const ARDebugTable = () => {
         {/* Customer List (Left) */}
         {selectedRange && (
           <Card className={`${selectedCustomer ? 'lg:col-span-3' : 'lg:col-span-12'} border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white animate-in slide-in-from-left duration-700 flex flex-col h-[calc(100vh-180px)] sticky top-32`}>
-
-            {/* --- Header: คงที่ (Fixed Header) --- */}
             <div className="bg-slate-900 p-6 flex justify-between items-center text-white shrink-0">
               <div className="flex flex-col gap-1">
                 <span className="font-black text-sm uppercase tracking-widest flex items-center gap-3">
                   <User size={20} className="text-blue-400" /> {selectedRange}
                 </span>
-                {/* ส่วนยอดรวมกลุ่มหนี้ */}
                 <span className="text-[16px] font-bold text-slate-400 uppercase tracking-tighter">
                   รวมกลุ่มนี้: <span className="text-rose-400">฿{formatCurrency(
                     customerListInSelectedRange.reduce((sum: number, c: any) => sum + (c.total || 0), 0)
                   )}</span>
                 </span>
               </div>
-
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="hover:bg-white/10 rounded-full" onClick={() => setSelectedRange(null)}>
-                  <FilterX size={20} />
-                </Button>
-              </div>
+              <Button variant="ghost" size="icon" className="hover:bg-white/10 rounded-full" onClick={() => setSelectedRange(null)}>
+                <FilterX size={20} />
+              </Button>
             </div>
 
-            {/* --- Content: เลื่อนได้ภายใน (Scrollable Content) --- */}
             <CardContent className="p-1 overflow-x-hidden overflow-y-auto flex-grow scrollbar-thin scrollbar-thumb-slate-200">
               <div className="space-y-1">
                 {customerListInSelectedRange.map((cust: any) => (
                   <div
                     key={cust.name}
-                    className={`flex justify-between items-center p-5 rounded-3xl cursor-pointer transition-all hover:bg-slate-50 ${selectedCustomer === cust.name ? 'bg-blue-50 ring-1 ring-blue-500/20 shadow-sm' : ''
-                      }`}
+                    className={`flex justify-between items-center p-5 rounded-3xl cursor-pointer transition-all hover:bg-slate-50 ${selectedCustomer === cust.name ? 'bg-blue-50 ring-1 ring-blue-500/20 shadow-sm' : ''}`}
                     onClick={() => setSelectedCustomer(cust.name)}
                   >
                     <div className="flex items-center gap-4">
-                      {/* Avatar อักษรนำหน้าชื่อ */}
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg transition-colors ${selectedCustomer === cust.name ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-slate-100 text-slate-400'
-                        }`}>
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg transition-colors ${selectedCustomer === cust.name ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-slate-100 text-slate-400'}`}>
                         {cust.name[0]}
                       </div>
-
                       <div>
                         <div className="text-sm font-black text-slate-800 leading-tight mb-1">{cust.name}</div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-slate-200 text-slate-400 font-bold uppercase">
-                            {cust.count} บิล
-                          </Badge>
-                        </div>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-slate-200 text-slate-400 font-bold uppercase">
+                          {cust.count} บิล
+                        </Badge>
                       </div>
                     </div>
-
                     <div className="flex items-center gap-4 text-right">
                       <div className="hidden sm:block">
                         <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">ยอดค้างชำระ</p>
-                        <p className={`text-sm font-black italic ${selectedCustomer === cust.name ? 'text-blue-600' : 'text-slate-900'
-                          }`}>
+                        <p className={`text-sm font-black italic ${selectedCustomer === cust.name ? 'text-blue-600' : 'text-slate-900'}`}>
                           ฿{formatCurrency(cust.total)}
                         </p>
                       </div>
-                      <ChevronRight size={16} className={`text-slate-300 transition-transform duration-300 ${selectedCustomer === cust.name ? 'rotate-90 text-blue-600' : ''
-                        }`} />
+                      <ChevronRight size={16} className={`text-slate-300 transition-transform duration-300 ${selectedCustomer === cust.name ? 'rotate-90 text-blue-600' : ''}`} />
                     </div>
                   </div>
                 ))}
               </div>
             </CardContent>
-
-            {/* ส่วนท้าย Card เพื่อความสวยงาม */}
             <div className="h-4 bg-slate-50/50 shrink-0 border-t border-slate-100"></div>
           </Card>
         )}
 
-        {/* Invoice Detail (Right - Fixed Footer & Scrollable) */}
+        {/* Invoice Detail (Right) */}
         {selectedCustomer && (
           <Card className={`${selectedRange ? 'lg:col-span-9' : 'lg:col-span-12'} border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white animate-in slide-in-from-right duration-700 flex flex-col h-[calc(100vh-180px)] sticky top-32`}>
 
@@ -290,7 +235,24 @@ const ARDebugTable = () => {
                 <div className="flex items-center gap-3 mb-1">
                   <Badge className="bg-blue-100 text-blue-700 border-none text-[10px] font-black uppercase tracking-widest shadow-sm">Customer insight</Badge>
                   <span className="text-slate-300 text-xs font-bold">/</span>
-                  <span className="text-slate-400 text-[10px] font-black uppercase tracking-tighter">{selectedRange}</span>
+                  <span className="text-slate-400 text-[10px] font-black uppercase tracking-tighter">
+                    {selectedRange}
+                    {/* เพิ่มการคำนวณยอดรวมเฉพาะลูกค้าและช่วงที่เลือก */}
+                    <span className="ml-2 text-rose-500">
+                      (฿{formatCurrency(filteredData
+                        .filter((t: any) => {
+                          const isSameCustomer = t.cusnam === selectedCustomer;
+                          const days = differenceInDays(new Date(), parseISO(t.docdat));
+                          const matchRange = selectedRange === ">90วัน" ? days > 90 :
+                            selectedRange === "60-90วัน" ? days > 60 && days <= 90 :
+                              selectedRange === "30-60วัน" ? days > 30 && days <= 60 :
+                                selectedRange === "<30วัน" ? days <= 30 : true;
+                          return isSameCustomer && matchRange;
+                        })
+                        .reduce((sum: number, t: any) => sum + (Number(t.remamt) || 0), 0)
+                      )})
+                    </span>
+                  </span>
                 </div>
                 <h2 className="text-2xl xl:text-3xl font-black text-slate-900 tracking-tighter truncate max-w-[400px] xl:max-w-full">
                   {selectedCustomer}
@@ -302,22 +264,18 @@ const ARDebugTable = () => {
             </CardHeader>
 
             {/* --- Content: ยืดหยุ่นและ Scroll ได้ภายใน (Scrollable Area) --- */}
-            <CardContent className="p-0 overflow-y-auto flex-grow scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+            <CardContent className="p-0 overflow-y-auto flex-grow scrollbar-thin scrollbar-thumb-slate-200">
               <div className="min-h-full">
                 {(() => {
-                  // ✅ ลอจิกการกรองข้อมูลตามลูกค้า และ Aging Range ที่เลือก
                   const detailTransactions = filteredData
                     .filter((t: any) => {
                       const isSameCustomer = t.cusnam === selectedCustomer;
                       if (!isSameCustomer) return false;
-
-                      // กรองตาม Range ที่เลือกบน Header
                       const days = differenceInDays(new Date(), parseISO(t.docdat));
                       if (selectedRange === ">90วัน") return days > 90;
                       if (selectedRange === "60-90วัน") return days > 60 && days <= 90;
                       if (selectedRange === "30-60วัน") return days > 30 && days <= 60;
                       if (selectedRange === "<30วัน") return days <= 30;
-
                       return true;
                     })
                     .map((t: any) => ({
@@ -326,24 +284,19 @@ const ARDebugTable = () => {
                       rem_amt: Number(t.remamt) || 0,
                       net_amt: Number(t.netamt) || 0,
                       doc_date: formatThaiDate(t.docdat),
-                      age_days: differenceInDays(new Date(), parseISO(t.docdat))
+                      // ส่งค่า age_days ไปยัง ListView/KanbanView เพื่อให้แสดงผลอายุหนี้ในแต่ละรายการ
+                      age_days: differenceInDays(new Date(), parseISO(t.docdat)),
+                      paytrm: t.paytrm,         
+                      overdue_days: t.overdue_days 
                     }))
-                    // เรียงลำดับตามความใหม่ของเอกสาร
-                    .sort((a: any, b: any) => parseISO(b.doc_date).getTime() - parseISO(a.doc_date).getTime());
+                    .sort((a: any, b: any) => b.age_days - a.age_days);
 
-                  // Pagination สำหรับส่วนรายละเอียด
-                  const itemsPerPage = 8;
-                  const totalPages = Math.ceil(detailTransactions.length / itemsPerPage);
-                  const paginatedItems = detailTransactions.slice((innerPage - 1) * itemsPerPage, innerPage * itemsPerPage);
+                  const paginatedItems = detailTransactions.slice((innerPage - 1) * innerItemsPerPage, innerPage * innerItemsPerPage);
 
-                  return (
-                    <>
-                      {viewMode === "list" ? (
-                        <ListView data={paginatedItems} />
-                      ) : (
-                        <KanbanView data={paginatedItems} />
-                      )}
-                    </>
+                  return viewMode === "list" ? (
+                    <ListView data={paginatedItems} />
+                  ) : (
+                    <KanbanView data={paginatedItems} />
                   );
                 })()}
               </div>
@@ -352,39 +305,30 @@ const ARDebugTable = () => {
             {/* --- Footer: คงที่ด้านล่าง (Fixed Bottom) --- */}
             <div className="mt-auto border-t border-slate-100 bg-white p-6 flex justify-between items-center shrink-0">
               {(() => {
-                // ✅ 1. กรองข้อมูลที่ตรงกับเงื่อนไข Customer และ Range ที่เลือกจริง
                 const filteredDetailData = filteredData.filter((t: any) => {
-                  const isSameCustomer = t.cusnam === selectedCustomer;
-                  if (!isSameCustomer) return false;
-
+                  if (t.cusnam !== selectedCustomer) return false;
                   const days = differenceInDays(new Date(), parseISO(t.docdat));
-                  const matchRange =
-                    selectedRange === ">90วัน" ? days > 90 :
-                      selectedRange === "60-90วัน" ? days > 60 && days <= 90 :
-                        selectedRange === "30-60วัน" ? days > 30 && days <= 60 :
-                          selectedRange === "<30วัน" ? days <= 30 : true;
-
-                  return matchRange;
+                  return selectedRange === ">90วัน" ? days > 90 :
+                    selectedRange === "60-90วัน" ? days > 60 && days <= 90 :
+                      selectedRange === "30-60วัน" ? days > 30 && days <= 60 :
+                        selectedRange === "<30วัน" ? days <= 30 : true;
                 });
 
                 const totalRecords = filteredDetailData.length;
-                // คำนวณจำนวนหน้าทั้งหมดใหม่ตามลอจิก Range
-                const itemsPerPage = 8;
-                const totalPagesCount = Math.ceil(totalRecords / itemsPerPage) || 1;
+                const totalPagesCount = Math.ceil(totalRecords / innerItemsPerPage) || 1;
 
                 return (
                   <>
-                    {/* ส่วนแสดงจำนวนรายการรวมตาม Range */}
                     <div className="hidden sm:block">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">
-                        Aging Focus: {selectedRange}
-                      </p>
-                      <p className="text-[10px] font-black text-slate-900 uppercase">
-                        Total {totalRecords} Invoices Found
-                      </p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Aging Focus: {selectedRange}</p>
+                        {/* เพิ่ม Badge สรุปสถานะความเสี่ยงใน Footer */}
+                        {selectedRange === ">90วัน" && (
+                          <Badge className="bg-rose-500 text-white text-[8px] animate-pulse">Critical Risk</Badge>
+                        )}
+                      </div>
+                      <p className="text-[10px] font-black text-slate-900 uppercase">Total {totalRecords} Invoices Found</p>
                     </div>
-
-                    {/* ส่วน Pagination ที่สัมพันธ์กับข้อมูลที่กรองแล้ว */}
                     <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl shadow-inner ml-auto">
                       <Button
                         variant="ghost"
@@ -395,13 +339,9 @@ const ARDebugTable = () => {
                       >
                         Prev
                       </Button>
-
-                      <div className="flex items-center px-4 min-w-[80px] justify-center">
-                        <span className="text-xs font-black text-slate-900 italic">{innerPage}</span>
-                        <span className="text-xs font-bold text-slate-300 mx-2">/</span>
-                        <span className="text-xs font-bold text-slate-400 italic">{totalPagesCount}</span>
+                      <div className="flex items-center px-4 min-w-[80px] justify-center text-xs font-black italic">
+                        {innerPage} <span className="text-slate-300 mx-2">/</span> {totalPagesCount}
                       </div>
-
                       <Button
                         variant="ghost"
                         size="sm"
@@ -420,94 +360,117 @@ const ARDebugTable = () => {
         )}
       </div>
 
-      {/* Full Table Mode (When no selection) */}
+      {/* Full Table Mode */}
       {!selectedRange && !selectedCustomer && (
-        <div className="space-y-6 animate-in slide-in-from-bottom duration-700">
-          <div className="rounded-[2rem] overflow-hidden border border-slate-200 shadow-2xl bg-white">
-            {viewMode === "list" ? (
-              <div className="w-full overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="bg-slate-900 text-white uppercase text-[16px] font-black tracking-[0.2em]">
-                    <tr>
-                      <th className="p-8">ลูกค้า</th>
-                      <th className="p-8">เอกสาร</th>
-                      <th className="p-8">วันที่</th>
-                      <th className="p-8 text-right italic">สุทธิ</th>
-                      <th className="p-8 text-right">
-                        <div className="flex flex-col items-end">
-                          <span>ยอดค้าง</span>
-                          <span className="text-rose-500 text-xs font-black">รวม: {formatCurrency(totalBalance)}</span>
-                        </div>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...filteredData]
-                      .sort((a, b) => (Number(b.netamt) || 0) - (Number(a.netamt) || 0))
-                      .slice(indexOfFirstItem, indexOfLastItem)
-                      .map((inv: any) => (
-                        <tr key={inv.id} className="border-b border-slate-50 hover:bg-blue-50/30 transition-all">
-                          <td className="p-8 font-bold text-slate-600">
-                            <Button variant={'ghost'} onClick={() => setSelectedCustomer(inv.cusnam)}>{inv.cusnam}</Button>
-                          </td>
-                          <td className="p-8 font-black text-slate-900">{inv.docnum}</td>
-                          <td className="p-8 text-sm font-bold text-slate-500">{formatThaiDate(inv.docdat)}</td>
-                          <td className="p-8 text-right font-bold text-slate-900 bg-slate-50/50">
-                            {formatCurrency(inv.netamt)}
-                          </td>
-                          <td className="p-8 text-right font-black text-rose-600 text-xl italic">
-                            {formatCurrency(inv.remamt)}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="p-10 grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-8 bg-slate-50/30">
-                {[...filteredData]
-                  .sort((a, b) => (Number(b.netamt) || 0) - (Number(a.netamt) || 0))
-                  .slice(indexOfFirstItem, indexOfLastItem)
-                  .map((inv: any) => (
-                    <div key={inv.id} className="bg-white p-8 rounded-[2.5rem] border shadow-sm hover:shadow-2xl transition-all border-t-4 border-t-slate-900">
-                      <Badge className="bg-slate-900 mb-6">{inv.docnum}</Badge>
-                      <p className="font-black text-slate-800 text-sm mb-6 h-10 line-clamp-2">{inv.cusnam}</p>
-                      <div className="border-t pt-6 flex justify-between items-end">
-                        <div>
-                          <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Net Amount</p>
-                          <p className="text-sm font-bold text-slate-900 mb-2">{formatCurrency(inv.netamt)}</p>
-                          <p className="text-[9px] text-rose-400 font-black uppercase tracking-widest">Balance</p>
-                          <p className="text-xl font-black text-rose-600 italic leading-none">{formatCurrency(inv.remamt)}</p>
-                        </div>
-                        <p className="text-[10px] font-black text-slate-300">{formatThaiDate(inv.docdat)}</p>
+  <div className="space-y-6 animate-in slide-in-from-bottom duration-700">
+    <div className="rounded-[2rem] overflow-hidden border border-slate-200 shadow-2xl bg-white">
+      {viewMode === "list" ? (
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-900 text-white uppercase text-[16px] font-black tracking-[0.2em]">
+              <tr>
+                <th className="p-8">ลูกค้า</th>
+                <th className="p-8">เอกสาร</th>
+                <th className="p-8">วันที่</th>
+                <th className="p-8 text-center">สถานะ</th>
+                <th className="p-8 text-right italic">สุทธิ</th>
+                <th className="p-8 text-right">
+                  <div className="flex flex-col items-end">
+                    <span>ยอดค้าง</span>
+                    <span className="text-rose-500 text-xs font-black">รวม: {formatCurrency(totalBalance)}</span>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredData.slice(indexOfFirstItem, indexOfLastItem).map((inv: any) => {
+                // ✅ คำนวณสถานะหนี้จาก age_days
+                const isOverdue = (inv.age_days || 0) > 0;
+                
+                return (
+                  <tr key={inv.id} className="border-b border-slate-50 hover:bg-blue-50/30 transition-all">
+                    <td className="p-8 font-bold text-slate-600">
+                      <Button variant='ghost' onClick={() => setSelectedCustomer(inv.cusnam)}>{inv.cusnam}</Button>
+                    </td>
+                    <td className="p-8 font-black text-slate-900">{inv.docnum}</td>
+                    <td className="p-8 text-sm font-bold text-slate-500">{formatThaiDate(inv.docdat)}</td>
+                    
+                    {/* ✅ แก้ไขคอลัมน์สถานะ: แสดง Normal/Overdue พร้อม Tooltip รายละเอียดวันที่เกิน */}
+                    <td className="p-8 text-center">
+                      <div 
+                        className="inline-flex items-center justify-center cursor-help"
+                        title={isOverdue 
+                          ? `Credit Term: ${inv.paytrm || 0} วัน (เกินกำหนดมาแล้ว ${inv.overdue_days || 0} วัน)` 
+                          : `Credit Term: ${inv.paytrm || 0} วัน (ยังไม่ถึงกำหนดชำระ)`}
+                      >
+                        {isOverdue ? (
+                          <span className="flex items-center gap-1.5 px-4 py-1.5 bg-rose-100 text-rose-700 rounded-full text-[10px] font-black uppercase tracking-tighter">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
+                            Overdue
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-tighter">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                            Normal
+                          </span>
+                        )}
                       </div>
-                    </div>
-                  ))}
-              </div>
-            )}
+                    </td>
 
-            <div className="p-10 bg-white border-t flex flex-col md:flex-row justify-between items-center gap-8">
-              <div className="text-xs font-black uppercase text-slate-900 tracking-widest">
-                Showing {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredData.length)} of {filteredData.length} records
+                    <td className="p-8 text-right font-bold text-slate-900 bg-slate-50/50">{formatCurrency(inv.netamt)}</td>
+                    <td className="p-8 text-right font-black text-rose-600 text-xl italic">{formatCurrency(inv.remamt)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="p-10 grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-8 bg-slate-50/30">
+          {filteredData.slice(indexOfFirstItem, indexOfLastItem).map((inv: any) => {
+            const isOverdue = (inv.age_days || 0) > 0;
+            
+            return (
+              <div key={inv.id} className={`bg-white p-8 rounded-[2.5rem] border shadow-sm hover:shadow-2xl transition-all border-t-4 ${isOverdue ? 'border-t-rose-600' : 'border-t-slate-900'}`}>
+                <div className="flex justify-between items-start mb-6">
+                  <Badge className={isOverdue ? "bg-rose-600" : "bg-slate-900"}>{inv.docnum}</Badge>
+                  {isOverdue && (
+                    <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-100">
+                      +{inv.overdue_days}d
+                    </span>
+                  )}
+                </div>
+                <p className="font-black text-slate-800 text-sm mb-6 h-10 line-clamp-2">{inv.cusnam}</p>
+                <div className="border-t pt-6 flex justify-between items-end">
+                  <div>
+                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Balance</p>
+                    <p className="text-xl font-black text-rose-600 italic leading-none">{formatCurrency(inv.remamt)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-[10px] font-black ${isOverdue ? 'text-rose-400' : 'text-slate-300'}`}>
+                      {formatThaiDate(inv.docdat)}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex gap-2 bg-slate-100 p-2 rounded-3xl shadow-inner">
-                <Button variant="ghost" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="rounded-2xl h-12 px-6 text-xs font-black uppercase">Prev</Button>
-                {[...Array(totalPages)].map((_, i) => (
-                  <Button
-                    key={i}
-                    variant={currentPage === i + 1 ? "default" : "ghost"}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`w-12 h-12 rounded-2xl text-xs font-black transition-all ${currentPage === i + 1 ? 'bg-slate-900 text-white shadow-xl scale-110' : 'text-slate-500'}`}
-                  >
-                    {i + 1}
-                  </Button>
-                )).slice(Math.max(0, currentPage - 3), Math.min(totalPages, currentPage + 2))}
-                <Button variant="ghost" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className={`rounded-2xl h-12 px-6 text-xs font-black uppercase`}>Next</Button>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
       )}
+      
+      {/* Pagination UI */}
+      <div className="p-10 bg-white border-t flex flex-col md:flex-row justify-between items-center gap-8">
+        <div className="text-xs font-black uppercase text-slate-900 tracking-widest">
+          Showing {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredData.length)} of {filteredData.length} records
+        </div>
+        <div className="flex gap-2 bg-slate-100 p-2 rounded-3xl shadow-inner">
+          <Button variant="ghost" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="rounded-2xl h-12 px-6 text-xs font-black uppercase">Prev</Button>
+          <Button variant="ghost" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="rounded-2xl h-12 px-6 text-xs font-black uppercase">Next</Button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

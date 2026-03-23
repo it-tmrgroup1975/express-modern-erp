@@ -1,4 +1,5 @@
 from django.db import models
+from datetime import date
 
 class Customer(models.Model):
     """
@@ -56,6 +57,14 @@ class ArTransaction(models.Model):
         """คำนวณอายุหนี้นับจากวันที่เอกสาร"""
         from datetime import date
         return (date.today() - self.docdat).days
+
+    @property
+    def overdue_days(self):
+        """คำนวณจำนวนวันที่ค้างชำระจริงจากวันครบกำหนด (duedat)"""
+        if not self.duedat:
+            return 0
+        diff = (date.today() - self.duedat).days
+        return max(0, diff) # คืนค่า 0 หากยังไม่ถึงกำหนด, คืนค่าจำนวนวันที่เกินหากเลยกำหนดแล้ว
 
     class Meta:
         verbose_name = "รายการเคลื่อนไหวลูกหนี้"

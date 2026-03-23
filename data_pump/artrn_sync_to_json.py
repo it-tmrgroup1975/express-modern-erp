@@ -1,6 +1,15 @@
 import pyodbc
 import json
 import os
+import logging
+from datetime import datetime
+
+# ตั้งค่า Logging
+logging.basicConfig(
+    filename=f'sync_log_{datetime.now().strftime("%Y%m")}.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 def fetch_artrn_joined_data():
     # 1. กำหนด Path สำหรับจัดเก็บไฟล์ JSON (อ้างอิงจากโครงสร้างโปรเจกต์เดิม)
@@ -49,10 +58,12 @@ def fetch_artrn_joined_data():
         # 5. บันทึกข้อมูลลงไฟล์ JSON
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(results, f, ensure_ascii=False, indent=4, default=str)
-                
+
+        logging.info(f"✅ Sync สำเร็จ: {len(results)} records")        
         print(f"✅ Exported ARTRN Joined: {len(results)} records")
 
     except Exception as e:
+        logging.error(f"❌ เกิดข้อผิดพลาดในการ Sync: {str(e)}")
         print(f"❌ Error: {e}")
     finally:
         if 'conn' in locals():

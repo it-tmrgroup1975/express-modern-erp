@@ -1,13 +1,8 @@
-import React from 'react';
+// frontend/src/pages/AccountReceivableAging/ARReport.tsx
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import {
     Printer,
-    FileText,
-    TrendingUp,
     AlertCircle,
-    Calendar,
-    UserCheck
 } from 'lucide-react';
 import {
     BarChart,
@@ -19,6 +14,9 @@ import {
     ResponsiveContainer,
     Cell
 } from 'recharts';
+
+// ✅ นำเข้า api instance แทน axios ปกติ
+import api from "../../lib/api";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
@@ -43,12 +41,12 @@ const printStyles = `
     .print-wrapper {
       display: flex;
       flex-direction: column;
-      min-height: 277mm; /* ความสูง A4 ประมาณ 297mm หักลบ margin บน-ล่าง */
+      min-height: 277mm; 
       width: 100%;
     }
 
     .print-content {
-      flex: 1; /* ขยายเนื้อหาเพื่อดันส่วนที่เหลือลงไป */
+      flex: 1; 
     }
 
     .card { 
@@ -58,7 +56,6 @@ const printStyles = `
       margin-bottom: 8px !important;
     }
 
-    /* ตรึง Footer ไว้ท้ายกระดาษโดยใช้ margin-top: auto */
     .print-footer {
       display: flex !important;
       margin-top: auto; 
@@ -75,10 +72,11 @@ const printStyles = `
 `;
 
 const ARReport = () => {
+    // ✅ ปรับ queryFn ให้ใช้ api instance เพื่อส่ง JWT Token อัตโนมัติ
     const { data: transactions, isLoading } = useQuery({
         queryKey: ['ar-transactions'],
         queryFn: async () => {
-            const response = await axios.get('http://localhost:8000/api/analytics/transactions/');
+            const response = await api.get('/api/analytics/transactions/');
             return response.data;
         }
     });
@@ -124,17 +122,14 @@ const ARReport = () => {
                     <p className="text-slate-500 text-sm">Preview Mode (A4 Portrait)</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" onClick={handlePrint} className="flex gap-2 bg-blue-600 hover:bg-blue-400 text-white">
+                    <Button variant="outline" onClick={handlePrint} className="flex gap-2 bg-blue-600 hover:bg-blue-400 text-white border-none shadow-sm">
                         <Printer size={18} /> พิมพ์รายงาน
                     </Button>
-                    {/* <Button onClick={handlePrint} className="flex gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-                        <FileText size={18} /> Export PDF
-                    </Button> */}
                 </div>
             </div>
 
             {/* Main Report Container */}
-            <div className="print-wrapper max-w-7xl mx-auto bg-white p-4 md:p-8 shadow-sm">
+            <div className="print-wrapper max-w-7xl mx-auto bg-white p-4 md:p-8 shadow-sm rounded-xl">
                 
                 <div className="print-content space-y-4">
                     {/* Header */}
@@ -143,23 +138,23 @@ const ARReport = () => {
                         <p className="text-xs text-slate-600 font-medium tracking-wide">Express Modern ERP | ข้อมูล ณ วันที่ {new Date().toLocaleDateString('th-TH')}</p>
                     </div>
 
-                    {/* KPI Cards (3 Cards in one row) */}
+                    {/* KPI Cards */}
                     <div className="grid grid-cols-3 gap-3">
-                        <Card className="card bg-slate-50/50">
+                        <Card className="card bg-slate-50/50 border-none shadow-none">
                             <CardContent className="pt-3 pb-2">
                                 <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">ยอดคงค้างรวม</p>
                                 <div className="text-lg font-bold text-blue-700">฿{totalAR.toLocaleString()}</div>
                                 <p className="text-[9px] text-slate-400 mt-1">{transactions?.length} รายการ</p>
                             </CardContent>
                         </Card>
-                        <Card className="card bg-slate-50/50">
+                        <Card className="card bg-slate-50/50 border-none shadow-none">
                             <CardContent className="pt-3 pb-2">
                                 <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">DSO (Average)</p>
                                 <div className="text-lg font-bold text-orange-600">42 วัน</div>
                                 <p className="text-[9px] text-orange-400 mt-1 italic">*สูงกว่าเป้าหมาย 12%</p>
                             </CardContent>
                         </Card>
-                        <Card className="card bg-slate-50/50">
+                        <Card className="card bg-slate-50/50 border-none shadow-none">
                             <CardContent className="pt-3 pb-2">
                                 <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Collection Rate</p>
                                 <div className="text-lg font-bold text-green-600">88.5%</div>
@@ -168,7 +163,7 @@ const ARReport = () => {
                         </Card>
                     </div>
 
-                    {/* Analysis Section (Charts & Risk) */}
+                    {/* Analysis Section */}
                     <div className="grid grid-cols-2 gap-3">
                         <Card className="card">
                             <CardHeader className="py-2 px-3 border-b">
@@ -200,12 +195,15 @@ const ARReport = () => {
                                     <div key={bucket.name} className="space-y-1">
                                         <div className="flex justify-between text-[9px] font-bold uppercase text-slate-600">
                                             <span>{bucket.name}</span>
-                                            <span>{((bucket.value / totalAR) * 100).toFixed(1)}%</span>
+                                            <span>{totalAR > 0 ? ((bucket.value / totalAR) * 100).toFixed(1) : 0}%</span>
                                         </div>
                                         <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200">
                                             <div
-                                                className="h-full"
-                                                style={{ width: `${(bucket.value / totalAR) * 100}%`, backgroundColor: bucket.color }}
+                                                className="h-full transition-all duration-500"
+                                                style={{ 
+                                                    width: `${totalAR > 0 ? (bucket.value / totalAR) * 100 : 0}%`, 
+                                                    backgroundColor: bucket.color 
+                                                }}
                                             />
                                         </div>
                                     </div>
@@ -214,10 +212,10 @@ const ARReport = () => {
                         </Card>
                     </div>
 
-                    {/* Table Section (Limited to 10 rows) */}
+                    {/* Table Section */}
                     <Card className="card overflow-hidden">
                         <div className="bg-slate-900 text-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider flex justify-between">
-                            <span>Top 10 Delinquent Customers (ลูกหนี้ค้างชำระสูงสุด)</span>
+                            <span>Top 30 Delinquent Invoices (รายการค้างชำระล่าสุด)</span>
                             <AlertCircle size={10} className="text-yellow-400" />
                         </div>
                         <CardContent className="p-0">
@@ -232,7 +230,7 @@ const ARReport = () => {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {transactions?.slice(0, 30).map((item: any) => (
+                                    {transactions?.slice(0, 10).map((item: any) => (
                                         <TableRow key={item.docnum} className="border-b">
                                             <TableCell className="py-1.5 px-3 text-[9px] font-bold font-mono text-blue-800">{item.docnum}</TableCell>
                                             <TableCell className="py-1.5 px-3 text-[9px] truncate max-w-[150px]">{item.cusnam}</TableCell>
@@ -255,7 +253,7 @@ const ARReport = () => {
                     </Card>
                 </div>
 
-                {/* Fixed Footer for Print - ดันลงท้ายกระดาษด้วย margin-top: auto */}
+                {/* Fixed Footer for Print */}
                 <div className="hidden print:flex print-footer justify-between items-end">
                     <div className="text-[9px] text-slate-500 space-y-0.5">
                         <p className="font-bold text-slate-700">Express Modern ERP Analytics System</p>
