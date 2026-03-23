@@ -15,7 +15,7 @@ def fetch_armas_joined_data():
 
     try:
         # 2. เชื่อมต่อผ่าน DSN ที่ตั้งค่าไว้ (ExpressDB)
-        conn = pyodbc.connect("DSN=ExpressDB;", autocommit=True)
+        conn = pyodbc.connect("DSN=EXPRESS_DATA;", autocommit=True)
         cursor = conn.cursor()
 
         # 3. SQL Query ตามที่ระบุ (ใช้ DISTINCT เพื่อเอาข้อมูลลูกค้าที่ไม่ซ้ำ)

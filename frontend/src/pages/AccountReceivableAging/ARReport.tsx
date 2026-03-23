@@ -134,7 +134,7 @@ const ARReport = () => {
             </div>
 
             {/* Main Report Container */}
-            <div className="print-wrapper max-w-5xl mx-auto bg-white p-4 md:p-8 shadow-sm">
+            <div className="print-wrapper max-w-7xl mx-auto bg-white p-4 md:p-8 shadow-sm">
                 
                 <div className="print-content space-y-4">
                     {/* Header */}
@@ -232,7 +232,7 @@ const ARReport = () => {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {transactions?.slice(0, 10).map((item: any) => (
+                                    {transactions?.slice(0, 30).map((item: any) => (
                                         <TableRow key={item.docnum} className="border-b">
                                             <TableCell className="py-1.5 px-3 text-[9px] font-bold font-mono text-blue-800">{item.docnum}</TableCell>
                                             <TableCell className="py-1.5 px-3 text-[9px] truncate max-w-[150px]">{item.cusnam}</TableCell>
@@ -244,7 +244,7 @@ const ARReport = () => {
                                                 {item.age_days > 60 ? (
                                                     <span className="text-red-600 text-[8px] font-black uppercase border border-red-200 bg-red-50 px-1 rounded">Critical</span>
                                                 ) : (
-                                                    <span className="text-slate-400 text-[8px] font-bold uppercase px-1">Normal</span>
+                                                    <span className="text-green-700 text-[8px] font-bold uppercase px-1">Normal</span>
                                                 )}
                                             </TableCell>
                                         </TableRow>

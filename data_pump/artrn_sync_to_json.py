@@ -14,7 +14,7 @@ def fetch_artrn_joined_data():
 
     try:
         # 2. เชื่อมต่อผ่าน DSN ที่ตั้งค่าไว้
-        conn = pyodbc.connect("DSN=ExpressDB;", autocommit=True)
+        conn = pyodbc.connect("DSN=EXPRESS_DATA;", autocommit=True)
         cursor = conn.cursor()
 
         # 3. SQL Query ตามที่ระบุ พร้อม Join ARMAS และ OESLM

@@ -4,11 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { format, parseISO, differenceInDays, getYear, addYears } from "date-fns";
 import {
-  ChevronRight, Calendar as CalendarIcon, User, FileText, ArrowLeft,
+  ChevronRight,  User, ArrowLeft,
   LayoutGrid, List, Search, FilterX
 } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Card, CardContent, CardHeader } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";

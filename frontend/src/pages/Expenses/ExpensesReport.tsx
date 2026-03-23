@@ -21,7 +21,7 @@ const ExpensesReport = () => {
     setLoading(true);
     try {
       // ยิง API แบบ Dynamic ตามปีที่เลือก
-      const response = await fetch(`http://localhost:8000/api/expenses/report/pivot/?year=${year}`);
+      const response = await fetch(`http://localhost:8000/api/expenses/report/pivot/?year=1968`);
       if (!response.ok) throw new Error('Network response was not ok');
       const json = await response.json();
       setData(json.data);

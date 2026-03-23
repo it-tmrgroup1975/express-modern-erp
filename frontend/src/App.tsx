@@ -27,7 +27,7 @@ const NavGroup = ({ title, icon: Icon, children, isOpen, onClick }: any) => (
   <div className="space-y-1">
     <button 
       onClick={onClick}
-      className="w-full flex items-center justify-between p-3 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+      className="w-full flex items-center justify-between p-3 rounded-lg text-slate-400 hover:text-white hover:bg-pink-300 transition-all"
     >
       <div className="flex items-center gap-3">
         <Icon size={20} />
@@ -47,12 +47,12 @@ const NavLink = ({ to, icon: Icon, children, sub = false }: any) => {
   return (
     <Link 
       to={to} 
-      className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+      className={`flex items-center gap-3 mt-1 p-3 rounded-lg transition-all ${
         sub ? 'ml-9 py-2 text-sm' : ''
       } ${
         isActive 
-          ? 'bg-blue-600 text-white shadow-md' 
-          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          ? 'bg-pink-600 text-white shadow-md' 
+          : 'text-slate-400 hover:text-white hover:bg-pink-300'
       }`}
     >
       {Icon && <Icon size={sub ? 16 : 20} />}
@@ -70,9 +70,9 @@ function App() {
         <div className="flex min-h-screen bg-slate-50">
           
           {/* Sidebar */}
-          <nav className="w-64 bg-slate-900 text-white p-6 flex flex-col gap-2 sticky top-0 h-screen shrink-0 no-print overflow-y-auto">
+          <nav className="w-64 bg-violet-900 text-white p-6 flex flex-col gap-2 sticky top-0 h-screen shrink-0 no-print overflow-y-auto">
             <div className="flex items-center gap-3 mb-8 px-2">
-              <div className="p-2 bg-blue-600 rounded-lg shadow-inner">
+              <div className="p-2 bg-pink-600 rounded-lg shadow-inner">
                 <Database className="text-white" size={24} />
               </div>
               <span className="text-xl font-bold tracking-tight text-white">Express ERP</span>
@@ -96,7 +96,7 @@ function App() {
               <NavLink to="/expenses/import" icon={FileUp} sub>นำเข้าข้อมูล (Import)</NavLink>
             </NavGroup>
             
-            <div className="mt-auto border-t border-slate-800 pt-6 px-2 text-[10px] text-slate-500 text-center uppercase tracking-widest">
+            <div className="mt-auto border-t border-pink-600 pt-6 px-2 text-[10px] text-pink-500 text-center uppercase tracking-widest shadow-2xl">
               System Live v1.2
             </div>
           </nav>
