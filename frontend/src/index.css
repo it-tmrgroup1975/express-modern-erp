@@ -90,3 +90,15 @@
         @apply text-sm leading-none py-1.5;
     }
 }
+
+@media print {
+  @page { size: A3 landscape; margin: 0; }
+  body { -webkit-print-color-adjust: exact; }
+}
+.font-erp-report {
+  font-family: 'Tahoma', 'Geneva', sans-serif;
+  line-height: 1.2;
+}
+.double-underline {
+  border-bottom: 3px double black;
+}

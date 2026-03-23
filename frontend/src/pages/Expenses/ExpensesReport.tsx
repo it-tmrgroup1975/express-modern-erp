@@ -1,14 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { TrendingUp, DollarSign, Calculator, FileSpreadsheet, Calendar } from 'lucide-react';
+import { TrendingUp, DollarSign, Calculator, FileSpreadsheet, Calendar, FileDown } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { useReactToPrint } from "react-to-print";
+import { ExpensePrintTemplate } from './ExpensePrintTemplate';
+
 
 const ExpensesReport = () => {
   const [data, setData] = useState<any[]>([]);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
+  const printRef = useRef(null);
 
   // รายการปีที่ให้เลือก (ย้อนหลัง 5 ปี)
   const yearOptions = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i);
@@ -42,6 +46,12 @@ const ExpensesReport = () => {
     return data.reduce((sum, item) => sum + (Number(item[key]) || 0), 0);
   };
 
+  // ฟังก์ชันสั่งพิมพ์
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `รายงานค่าใช้จ่าย_${new Date().toLocaleDateString()}`,
+  });
+
   return (
     <div className="p-6 space-y-6 bg-slate-50/50 min-h-screen">
       {/* Header Section */}
@@ -50,12 +60,12 @@ const ExpensesReport = () => {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Expense Intelligence Report</h1>
           <p className="text-slate-500 text-sm">วิเคราะห์ค่าใช้จ่ายและภาษีซื้อเปรียบเทียบ 12 เดือน</p>
         </div>
-        
+
         <div className="flex items-center gap-4">
           {/* Year Selector */}
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm">
             <Calendar size={16} className="text-slate-400" />
-            <select 
+            <select
               className="bg-transparent border-none text-sm font-semibold text-slate-700 focus:ring-0 outline-none cursor-pointer"
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
@@ -66,12 +76,31 @@ const ExpensesReport = () => {
             </select>
           </div>
 
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <Badge className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm px-3 py-1">
               Status: Live Data
             </Badge>
+          </div> */}
+
+          <div className='text-center'>
+            <h2 className="text-xs font-light">รายงานค่าใช้จ่าย</h2>
+            {/* ปุ่ม Export */}
+            <Button onClick={() => handlePrint()} className="bg-amber-400 text-xs font-light">
+              <FileDown size={16} /> Export to PDF
+            </Button>
           </div>
         </div>
+
+
+      </div>
+
+      {/* ส่วนที่ซ่อนไว้เพื่อใช้สำหรับพิมพ์ PDF เท่านั้น */}
+      <div className="hidden">
+        <ExpensePrintTemplate
+          ref={printRef}
+          data={data}
+          title="รายงานสรุปค่าใช้จ่ายแยกตามแผนก"
+        />
       </div>
 
       {loading ? (
